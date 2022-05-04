@@ -10,7 +10,7 @@
       item-key="uid"
       class="elevation-1"
       loading-text="加载中"
-      no-data-text="没有数据"
+      no-data-text="没有数据 尝试更改筛选条件"
       no-results-text="没有符合结果"
       :footer-props="{
         'items-per-page-text': '每页显示条数',
@@ -32,11 +32,55 @@
             style="margin: 0 10px"
           ></v-select>
           <v-text-field
+            v-model="userSearch"
+            @keyup="fetchLogs"
+            label="筛选用户"
+            style="margin: 0 10px"
+            hide-details
+            clearable
+          ></v-text-field>
+          <v-menu
+            ref="menu"
+            v-model="menu"
+            :close-on-content-click="false"
+            transition="scale-transition"
+            offset-y
+            min-width="auto"
+          >
+            <template v-slot:activator="{ on, attrs }">
+              <v-text-field
+                v-model="formatDate"
+                label="日志时间范围（范围选择）"
+                append-icon="mdi-calendar"
+                readonly
+                hide-details
+                v-bind="attrs"
+                v-on="on"
+                show-current
+                style="margin: 0 10px"
+              ></v-text-field>
+            </template>
+            <v-date-picker
+              v-model="date"
+              range
+              no-title
+              locale="zh-cn"
+              :max="maxDate"
+              :allowed-dates="allowedDates"
+              scrollable
+              selected-items-text="选中 {0} 项"
+              @change="fetchLogs"
+            >
+              <v-btn text color="primary" @click="date=[];menu=false;fetchLogs();">显示全部</v-btn>
+            </v-date-picker>
+          </v-menu>
+
+          <v-text-field
             v-model="search"
             @keyup="fetchLogs"
-            append-icon="mdi-magnify"
             label="搜索任何内容"
             hide-details
+            clearable
           ></v-text-field>
         </div>
       </template>
@@ -77,7 +121,18 @@
 import moment from 'moment'
 export default {
   name: 'Log',
+  props: {
+    ifSearch: Boolean,
+    logOptions: Object
+  },
   mounted () {
+    if (!this.ifSearch) {
+      this.date = [moment().subtract(1, 'days').format('YYYY-MM-DD'), moment().format('YYYY-MM-DD')]
+    } else {
+      this.date = []
+      this.userSearch = this.logOptions.account
+      this.logType = this.logOptions.actionName
+    }
     this.fetchLogs()
   },
   watch: {
@@ -98,16 +153,27 @@ export default {
       }
     }
   },
+  computed: {
+    formatDate: function () {
+      return this.date.join(' ~ ')
+    },
+    maxDate: function () {
+      return moment().add(1, 'day').format('YYYY-MM-DD')
+    }
+  },
   data () {
     return {
       server: Window.$WebSocket,
       loading: true,
       page: 1,
+      menu: false,
+      date: ['', ''],
       pageCount: 0,
       options: {},
       totalItems: 0,
       itemsPerPage: 20,
       search: '',
+      userSearch: '',
       showSystemLog: false,
       logType: '',
       log_type: [
@@ -214,9 +280,14 @@ export default {
       this.server.Emit('GetLogs_Admin', {
         logType: this.logType,
         search: this.search,
+        userSearch: this.userSearch,
         showSystemLog: this.showSystemLog,
+        date: this.date,
         ...this.options
       })
+    },
+    allowedDates (val) {
+      return moment(val).isSameOrBefore()
     }
   }
 }
