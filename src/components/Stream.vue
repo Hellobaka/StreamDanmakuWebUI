@@ -25,6 +25,7 @@
         <v-btn text color="primary" @click="fetchBitmaps(item)">拉取</v-btn>
       </template>
       <template v-slot:item.actions="{ item }">
+        <v-btn text color="primary" @click="searchUser(item)">跳转信息</v-btn>
         <v-btn text color="primary" @click="previewStream(item)">预览流</v-btn>
         <v-btn text color="primary" @click="danmakuStream(item)">弹幕</v-btn>
         <v-btn text color="primary" @click="stopStream(item)">断流</v-btn>
@@ -49,6 +50,7 @@ import Danmaku from '@/components/Danmaku.vue'
 import Player from '@/components/Player.vue'
 import { Confirm } from '@/utils/dialog'
 import moment from 'moment'
+import { emitListener } from '@/utils/tools'
 
 export default {
   name: 'Stream',
@@ -80,6 +82,10 @@ export default {
         {
           text: '房间邀请码',
           value: 'invite_code'
+        },
+        {
+          text: '房间标题',
+          value: 'title'
         },
         {
           text: '开播时间',
@@ -224,6 +230,9 @@ export default {
     danmakuStream (item) {
       this.selectItem = item
       this.danmakuOn = true
+    },
+    searchUser (item) {
+      emitListener('filter-user', item.email)
     }
   }
 }

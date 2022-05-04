@@ -26,6 +26,7 @@
             @keydown="handleSearch"
             label="搜索任何内容"
             class="mx-4"
+            clearable
           ></v-text-field>
         </div>
       </template>
@@ -33,6 +34,8 @@
         <v-btn text color="primary" @click="toggleSilent([item], !parseBool(item.silent))">{{parseBool(item.silent)?'解除禁言':'禁言'}}</v-btn>
         <v-btn text color="primary" @click="toggleStream([item], !parseBool(item.stream))">{{parseBool(item.stream)?'禁播':'解除禁播'}}</v-btn>
         <v-btn text color="primary" @click="editInfo(item)">修改信息</v-btn>
+        <v-btn text color="primary" @click="streamHistory(item)">查询开播记录</v-btn>
+        <v-btn text color="primary" @click="danmakuHistory(item)">查询弹幕记录</v-btn>
       </template>
     </v-data-table>
     <v-card-actions>
@@ -78,9 +81,12 @@
 
 <script>
 import moment from 'moment'
-import { md5Encrypt } from '@/utils/tools'
+import { emitListener, md5Encrypt } from '@/utils/tools'
 export default {
   name: 'User',
+  props: {
+    userOptions: Object
+  },
   data () {
     return {
       server: Window.$WebSocket,
@@ -130,6 +136,7 @@ export default {
     }
   },
   mounted () {
+    this.search = this.userOptions.search
     this.fetchUsers()
   },
   methods: {
@@ -210,6 +217,18 @@ export default {
     },
     handleSearch (e) {
       if (!this.search) this.selected = []
+    },
+    streamHistory (item) {
+      emitListener('filter-log', {
+        actionName: 'CreateRoom',
+        account: item.email
+      })
+    },
+    danmakuHistory (item) {
+      emitListener('filter-log', {
+        actionName: 'Danmaku',
+        account: item.email
+      })
     }
   }
 }
