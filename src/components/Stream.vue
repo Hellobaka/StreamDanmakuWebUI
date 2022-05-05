@@ -88,6 +88,14 @@ export default {
           value: 'title'
         },
         {
+          text: '是否需要密码',
+          value: 'password_needed'
+        },
+        {
+          text: '房间是否公开',
+          value: 'public'
+        },
+        {
           text: '开播时间',
           value: 'start_time'
         },
@@ -116,28 +124,37 @@ export default {
   },
   mounted () {
     this.fetchRooms()
-    this.server.On('RoomAdd', this.HandleRoomChange)
+    this.server.On('RoomAdd', this.HandleRoomAdd)
+    this.server.On('RoomRemove', this.HandleRoomRemove)
   },
   methods: {
-    HandleRoomChange (data) {
-      data.time = moment()
-        .subtract(this.room.start_time, 'seconds')
-        .subtract(8, 'hour')
-        .format('HH:mm:ss')
-      this.rooms.push(data)
+    parseRoom (data) {
+      const r = {
+        uid: data.RoomID,
+        nickname: data.CreatorName,
+        invite_code: data.InviteCode,
+        title: data.Title,
+        password_needed: data.PasswordNeeded ? '是' : '否',
+        public: data.IsPublic ? '是' : '否',
+        time: moment().subtract(moment(data.CreateTime)).subtract(8, 'hour').format('HH:mm:ss'),
+        start_time: moment(data.CreateTime).format('YYYY-MM-DD HH:mm:ss'),
+        cap: `${data.ClientCount}/${data.Max}`
+      }
+      return r
+    },
+    HandleRoomAdd (data) {
+      this.rooms.push(this.parseRoom(data))
+    },
+    HandleRoomRemove (data) {
+      this.rooms.splice(this.rooms.findIndex(item => item.uid === data.RoomID), 1)
     },
     fetchRooms () {
+      this.rooms = []
       this.loading = true
       this.server.On('GetRoom_Admin', data => {
         if (data.code === 200) {
-          this.rooms = data.data
           this.snackbar.Success('刷新成功')
-          this.rooms.forEach(x => {
-            x.time = moment()
-              .subtract(this.room.start_time, 'seconds')
-              .subtract(8, 'hour')
-              .format('HH:mm:ss')
-          })
+          data.data.forEach(x => this.rooms.push(this.parseRoom(x)))
         } else {
           this.snackbar.Error(data.msg)
         }
@@ -232,7 +249,7 @@ export default {
       this.danmakuOn = true
     },
     searchUser (item) {
-      emitListener('filter-user', item.email)
+      emitListener('filter-user', item.nickname)
     }
   }
 }
