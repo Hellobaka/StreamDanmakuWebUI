@@ -47,8 +47,8 @@
     </v-navigation-drawer>
     <v-container fluid>
       <Stream v-if="status.stream"></Stream>
-      <Log v-if="status.log" :logOptions="logOptions" :ifSearch="search"></Log>
-      <User v-if="status.user" :userOptions="userOptions" :ifSearch="search"></User>
+      <Log v-if="status.log" :logOptions="logOptions"></Log>
+      <User v-if="status.user" :userOptions="userOptions"></User>
     </v-container>
   </div>
 </template>
@@ -75,7 +75,6 @@ export default {
         log: false
       },
       showMenu: true,
-      search: false,
       logOptions: {},
       userOptions: {}
     }
@@ -97,15 +96,13 @@ export default {
     })
     addListener('filter-user', (data) => {
       this.selectItem = 1
-      this.changeStatus('user')
-      this.search = true
       this.userOptions = {
         search: data
       }
+      this.changeStatus('user')
     })
     addListener('filter-log', (data) => {
       this.selectItem = 2
-      this.search = true
       this.logOptions = {
         actionName: data.actionName,
         account: data.account
