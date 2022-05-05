@@ -8,7 +8,7 @@
       </v-btn>
     </v-card-title>
     <v-card-text>
-      <v-data-table :search="search" :headers="headers" :items="danmaku_arr" :loading="loading" class="elevation-1"
+      <v-data-table :search="search" :headers="headers" :items="danmaku_arr" item-key="danmaku_time" :loading="loading" class="elevation-1"
       loading-text="加载中" no-data-text="没有数据" no-results-text="没有符合结果"
       :footer-props="{
         'items-per-page-text':'每页显示条数',
@@ -26,14 +26,19 @@
           </div>
         </template>
         <template v-slot:item.actions="{ item }">
-          <v-btn text color="primary" @click="userShutUp(item)">禁言</v-btn>
+          <v-btn :disabled="item.id === 0" text color="primary" @click="userShutUp(item)">禁言</v-btn>
+        </template>
+        <template v-slot:item.nickname="{ item }">
+          <a title="点击跳转用户信息" @click="searchUser(item)" :style="item.id === 0 ? 'color: red;' : ''">{{item.nickname}}</a>
+        </template>
+        <template v-slot:item.danmaku_color="{ item }">
+          <div :title="item.danmaku_color" :style="`width: 15px; height: 15px; border: 2px solid black; background-color: ${item.danmaku_color};`"></div>
         </template>
 
       </v-data-table>
     </v-card-text>
     <v-card-actions>
-      <v-text-field label="以管理员身份发送弹幕" v-model="danmaku">
-
+      <v-text-field label="以管理员身份发送弹幕" v-model="danmaku" @keydown.enter="sendDanmaku">
       </v-text-field>
       <v-btn color="primary" style="margin-left: 5px;" @click="sendDanmaku">发送</v-btn>
       <v-spacer></v-spacer>
@@ -44,6 +49,7 @@
 
 <script>
 import moment from 'moment'
+import { emitListener } from '@/utils/tools'
 export default {
   name: 'Danmaku',
   props: {
@@ -63,7 +69,7 @@ export default {
       danmaku: '',
       headers: [
         {
-          text: 'ID',
+          text: '用户ID',
           value: 'id'
         },
         {
@@ -104,7 +110,7 @@ export default {
       this.danmaku_arr.push(this.parseDanmaku(data))
     },
     parseDanmaku (data) {
-      return {
+      const d = {
         id: data.SenderUserID,
         nickname: data.SenderUserName,
         danmaku_content: data.Content,
@@ -112,6 +118,19 @@ export default {
         danmaku_position: data.Position,
         danmaku_time: data.Time
       }
+      switch (d.danmaku_position) {
+        case 0:
+          d.danmaku_position = '滚动'
+          break
+        case 1:
+          d.danmaku_position = '顶部'
+          break
+        case 2:
+          d.danmaku_position = '底部'
+          break
+      }
+      d.danmaku_time = moment.unix(d.danmaku_time).format('YYYY-MM-DD HH:mm:ss')
+      return d
     },
     fetchDanmaku () {
       this.loading = true
@@ -121,20 +140,6 @@ export default {
         if (data.code === 200) {
           data.data.forEach(x => {
             this.danmaku_arr.push(this.parseDanmaku(x))
-          })
-          this.danmaku_arr.forEach(x => {
-            switch (x.danmaku_position) {
-              case 0:
-                x.danmaku_position = '滚动'
-                break
-              case 1:
-                x.danmaku_position = '顶部'
-                break
-              case 2:
-                x.danmaku_position = '底部'
-                break
-            }
-            x.danmaku_time = moment(x.danmaku_time).format('YYYY-MM-DD HH:mm:ss')
           })
         } else {
           this.snackbar.Error(data.msg)
@@ -148,27 +153,33 @@ export default {
       this.$emit('onDialogClose', true)
     },
     userShutUp (user) {
-      this.server.On('UserShutUp_Admin', data => {
+      this.server.On('ToggleSilent_Admin', data => {
         if (data.code === 200) {
           this.snackbar.Success('操作成功')
         } else {
           this.snackbar.Error(data.msg)
         }
       })
-      this.server.Emit('UserShutUp_Admin', {
-        uid: user.id
+      this.server.Emit('ToggleSilent_Admin', {
+        uid: [user.id],
+        action: false
       })
     },
     sendDanmaku () {
       this.server.On('SendDanmaku_Admin', data => {
         if (data.code !== 200) {
           this.snackbar.Error(data.msg)
+        } else {
+          this.danmaku = ''
         }
       })
       this.server.Emit('SendDanmaku_Admin', {
         invite_code: this.room.invite_code,
         content: this.danmaku
       })
+    },
+    searchUser (item) {
+      emitListener('filter-user', item.nickname)
     }
   }
 }
