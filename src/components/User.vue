@@ -31,8 +31,8 @@
         </div>
       </template>
       <template v-slot:item.actions="{ item }">
-        <v-btn text color="primary" @click="toggleSilent([item], !parseBool(item.silent))">{{parseBool(item.silent)?'解除禁言':'禁言'}}</v-btn>
-        <v-btn text color="primary" @click="toggleStream([item], !parseBool(item.stream))">{{parseBool(item.stream)?'禁播':'解除禁播'}}</v-btn>
+        <v-btn text color="primary" @click="toggleSilent([item], !item.CanSendDanmaku)">{{item.CanSendDanmaku?'禁言':'解除禁言'}}</v-btn>
+        <v-btn text color="primary" @click="toggleStream([item], !item.CanStream)">{{item.CanStream?'禁播':'解除禁播'}}</v-btn>
         <v-btn text color="primary" @click="editInfo(item)">修改信息</v-btn>
         <v-btn text color="primary" @click="streamHistory(item)">查询开播记录</v-btn>
         <v-btn text color="primary" @click="danmakuHistory(item)">查询弹幕记录</v-btn>
@@ -50,7 +50,7 @@
         <v-card-title>修改用户信息</v-card-title>
         <v-card-text>
           <v-text-field
-            v-model="editInfoTarget.id"
+            v-model="editInfoTarget.uid"
             label="用户ID"
             disabled
           ></v-text-field>
@@ -110,7 +110,7 @@ export default {
           value: 'email'
         },
         {
-          text: '是否禁言',
+          text: '是否可发送弹幕',
           value: 'silent'
         },
         {
@@ -154,7 +154,9 @@ export default {
               uid: x.Id,
               nickname: x.NickName,
               email: x.Email,
-              silent: !x.CanSendDanmaku ? '是' : '否',
+              CanSendDanmaku: x.CanSendDanmaku,
+              CanStream: x.CanStream,
+              silent: x.CanSendDanmaku ? '是' : '否',
               stream: x.CanStream ? '是' : '否',
               reg_time: moment(x.CreateTime).format('YYYY-MM-DD HH:mm:ss'),
               last_time: moment(x.LastLoginTime).format('YYYY-MM-DD HH:mm:ss')
@@ -172,7 +174,8 @@ export default {
         if (data.code === 200) {
           this.snackbar.Success('操作成功')
           item.forEach(x => {
-            x.silent = x.silent === '是' ? '否' : '是'
+            x.CanSendDanmaku = action
+            x.silent = x.CanSendDanmaku ? '是' : '否'
           })
         } else {
           this.snackbar.Error(data.msg)
@@ -185,7 +188,8 @@ export default {
         if (data.code === 200) {
           this.snackbar.Success('操作成功')
           item.forEach(x => {
-            x.stream = x.stream === '是' ? '否' : '是'
+            x.CanStream = action
+            x.stream = x.CanStream ? '是' : '否'
           })
         } else {
           this.snackbar.Error(data.msg)
