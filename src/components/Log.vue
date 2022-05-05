@@ -84,6 +84,9 @@
           ></v-text-field>
         </div>
       </template>
+      <template v-slot:item.Account="{ item }">
+          <a title="点击跳转用户信息" @click="searchUser(item)" :style="item.id === 0 ? 'color: red;' : ''">{{item.Account}}</a>
+      </template>
     </v-data-table>
     <v-container style="display: flex">
       <v-row>
@@ -119,14 +122,14 @@
 
 <script>
 import moment from 'moment'
+import { emitListener } from '@/utils/tools'
 export default {
   name: 'Log',
   props: {
-    ifSearch: Boolean,
     logOptions: Object
   },
   mounted () {
-    if (!this.ifSearch) {
+    if (!(this.logOptions.account || this.logOptions.actionName)) {
       this.date = [moment().subtract(1, 'days').format('YYYY-MM-DD'), moment().format('YYYY-MM-DD')]
     } else {
       this.date = []
@@ -288,6 +291,9 @@ export default {
     },
     allowedDates (val) {
       return moment(val).isSameOrBefore()
+    },
+    searchUser (item) {
+      emitListener('filter-user', item.Account)
     }
   }
 }
