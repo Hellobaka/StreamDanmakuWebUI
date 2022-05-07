@@ -14,7 +14,7 @@
           <div class="item_text">{{ timeSwitch? item.streamTime:item.time}}</div>
         </div>
       </div>
-      <v-dialog v-model="scaleImg">
+      <v-dialog v-model="scaleImg" max-width="1200px">
         <img :src="selectImg" alt="">
         <v-btn @click="scaleImg=!scaleImg" icon dark style="background: rgba(0,0,0,.7); position: absolute; ">
           <v-icon>mdi-window-close</v-icon>
