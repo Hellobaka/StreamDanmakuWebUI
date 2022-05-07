@@ -178,7 +178,7 @@ export default {
       })
     },
     previewStream (item) {
-      this.server.Emit('GetPullUrl_Admin', { type: 1, invite_code: this.selectItem.invite_code })
+      this.server.Emit('GetPullUrl_Admin', { type: 1, invite_code: item.invite_code })
       this.server.On('GetPullUrl_Admin', data => {
         if (data.code === 200) {
           console.log('拉流地址获取成功')
